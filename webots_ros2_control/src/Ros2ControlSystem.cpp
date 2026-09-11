@@ -90,6 +90,16 @@ namespace webots_ros2_control {
     }
   }
 
+#if HARDWARE_INTERFACE_VERSION_MAJOR > 5 || (HARDWARE_INTERFACE_VERSION_MAJOR == 5 && HARDWARE_INTERFACE_VERSION_MINOR >= 3)
+  rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn Ros2ControlSystem::on_init(
+    const hardware_interface::HardwareComponentInterfaceParams &params) {
+    if (hardware_interface::SystemInterface::on_init(params) !=
+        rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS) {
+      return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
+    }
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
+  }
+#else
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn Ros2ControlSystem::on_init(
     const hardware_interface::HardwareInfo &info) {
     if (hardware_interface::SystemInterface::on_init(info) !=
@@ -98,6 +108,7 @@ namespace webots_ros2_control {
     }
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
   }
+#endif
 
   std::vector<hardware_interface::StateInterface> Ros2ControlSystem::export_state_interfaces() {
     std::vector<hardware_interface::StateInterface> interfaces;
@@ -153,7 +164,7 @@ namespace webots_ros2_control {
         const double velocity = std::isnan(joint.position) ? NAN : (position - joint.position) / deltaTime;
 
         if (!std::isnan(joint.velocity))
-          joint.acceleration = (joint.velocity - velocity) / deltaTime;
+          joint.acceleration = (velocity - joint.velocity) / deltaTime;
         joint.velocity = velocity;
         joint.position = position;
       }
